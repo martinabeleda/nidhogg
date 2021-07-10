@@ -63,6 +63,7 @@ type Handler struct {
 type HandlerConfig struct {
 	Daemonsets   []Daemonset `json:"daemonsets" yaml:"daemonsets"`
 	NodeSelector []string    `json:"nodeSelector" yaml:"nodeSelector"`
+	TaintEffect  string      `json:"taintEffect" yaml:"taintEffect"`
 	Selector     labels.Selector
 }
 
@@ -203,6 +204,10 @@ func (h *Handler) calculateTaints(instance *corev1.Node) (*corev1.Node, taintCha
 	return nodeCopy, changes, nil
 }
 
+func (h *Handler) addTaint(taints []corev1.Taint, taintName string) []corev1.Taint {
+	return append(taints, corev1.Taint{Key: taintName, Effect: h.config.taintEffect})
+}
+
 func (h *Handler) getDaemonsetPod(nodeName string, ds Daemonset) (*corev1.Pod, error) {
 	opts := client.InNamespace(ds.Namespace)
 	pods := &corev1.PodList{}
@@ -231,10 +236,6 @@ func podReady(pod *corev1.Pod) bool {
 		}
 	}
 	return true
-}
-
-func addTaint(taints []corev1.Taint, taintName string) []corev1.Taint {
-	return append(taints, corev1.Taint{Key: taintName, Effect: corev1.TaintEffectNoSchedule})
 }
 
 func removeTaint(taints []corev1.Taint, taintName string) []corev1.Taint {
